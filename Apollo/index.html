@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../css/d3.slider.css" />
+<link rel="stylesheet" href="css/style.css" />
+<body>
+    <div id="date">
+      <p>Current Year:</p>
+      <p id="year">1980</p>
+    </div>
+    <div id="play"></div>
+    <div id="slider-container">
+    </div>
+    <div id="map-container"></div>
+
+<script src="../lib/d3.v3.min.js" charset="utf-8"></script></script>
+<script src="../lib/topojson.v1.min.js"></script>
+<script src="../lib/d3.slider.js"></script>
+<script>
+
+var width = 700,
+    height = 600;
+
+var year0 = 1980,
+    scaling = 25,
+    maxBeds,
+    hospitals;
+
+var projection = d3.geo.mercator()
+    .center([78, 21])
+    .scale(1000)
+    .translate([width / 2 - 80, height / 2])
+    .precision(.1);
+
+var path = d3.geo.path()
+    .projection(projection)
+    .pointRadius(2);
+
+var svg = d3.select("#map-container").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var probe, hoverData;
+
+probe = d3.select("#map-container").append("div") // hover popup
+    .attr("id","probe");
+
+var color = d3.scale.ordinal()
+    .domain(["hospital", "Secondary Care Hospital"])
+    .range(["#6baed6", "#74c476"]);
+
+var frameLength = 800,
+    isPlaying = false,
+    currentYear = year0;
+
+var timeSlider = d3.slider()
+    .axis(true)
+    .min(1980)
+    .max(2015)
+    .step(1)
+    .value(year0)
+    .on("slide", function(evt, value) {
+        d3.select('#year').text(value);
+        drawYear(value);
+    })
+    .on("slideend",function(){
+        if (isPlaying) animate();
+    })
+    .on("slidestart",function(){
+        d3.select("#slider-div").on("mousemove",null)
+    });
+
+d3.select('#slider-container')
+    .call(timeSlider);
+
+d3.select("#play")
+    .attr("title","Play animation")
+    .on("click", function(){
+        if (!isPlaying){
+            isPlaying = true;
+            d3.select(this).classed("pause",true).attr("title","Pause animation");
+            animate();
+        } else {
+            isPlaying = false;
+            d3.select(this).classed("pause",false).attr("title","Play animation");
+            clearInterval(interval);
+        }
+    });
+
+d3.json("india-bangladesh.json", function(error, india) {
+	var subunits = topojson.feature(india, india.objects.subunits),
+	  	cities = topojson.feature(india, india.objects.cities);
+
+	svg.selectAll(".subunit")
+	  	.data(subunits.features)
+	  .enter().append("path")
+	  	.attr("class", "subunit")
+        .attr("id", function(d) { return d.id; })
+	  	.attr("d", path);
+
+	svg.selectAll(".subunit-label")
+		.data(subunits.features)
+	  .enter().append("text")
+	  	.attr("class", "subunit-label")
+	  	.attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+	  	.attr("dy", ".35em")
+	  	.text(function(d) { return d.properties.name !== "Lakshadweep" ? d.properties.name : null; });
+
+	svg.append("path")
+	  	.datum(cities)
+	  	.attr("d", path)
+	  	.attr("class", "place");
+
+	svg.selectAll(".place-label")
+	  	.data(cities.features)
+	  .enter().append("text")
+	  	.attr("class", "place-label")
+	  	.attr("transform", function(d) { return "translate(" + projection(d.geometry.coordinates) + ")"; })
+	  	.attr("x", function(d) { return d.geometry.coordinates[0] > -1 ? 6 : -6; })
+	  	.attr("dy", ".35em")
+	  	.style("text-anchor", function(d) { return d.geometry.coordinates[0] > -1 ? "start" : "end"; })
+	  	.text(function(d) { return d.properties.name; });
+
+    d3.json("apollo.json", function(error, apollo) {
+        if (error) throw(error);
+
+        maxBeds = Math.max.apply(Math, apollo.map(function(d){ return d.beds; }));
+
+        hospitals = svg.append("g")
+            .attr("class", "bubble-container")
+          .selectAll(".hospital")
+            .data(apollo
+                .sort(function(a, b) { return b.beds - a.beds; }))
+          .enter().append("circle")
+            .attr("transform", function(d) { return "translate(" + projection([d.lon, d.lat]) + ")"; })
+            .attr("fill", function(d) { return color(d.type); })
+            .attr("class", "hospital")
+            .on("mousemove", function(d) {
+				probe.style({
+                    "display": "block",
+                    "top":  (d3.event.pageY - 40) + "px",
+                    "left": (d3.event.pageX + 10) + "px"
+                })
+				.html("<strong>" + d.facility + "<br>" + d.beds + " beds</strong>");
+    		})
+    		.on("mouseout",function(){
+    			hoverData = null;
+    			probe.style("display","none");
+    		});;
+
+        drawYear(year0);
+    });
+
+});
+
+function animate() {
+    interval = setInterval( function(){
+        currentYear++;
+
+        if (currentYear == 2016) currentYear = 1980;
+
+        d3.select("#slider-container .d3-slider-handle")
+            .style("left", 100*(currentYear-1980)/(2015-1980) + "%" );
+        timeSlider.value(currentYear);
+
+        d3.select('#year').text(currentYear);
+
+        drawYear(currentYear);
+
+        if (currentYear == 2015) {
+            isPlaying = false;
+            d3.select("#play").classed("pause",false).attr("title","Play animation");
+            clearInterval(interval);
+            return;
+        }
+    }, frameLength);
+}
+
+function drawYear(year) {
+    hospitals
+        .transition()
+        .duration(.5*frameLength)
+        .ease("linear")
+        .attr("r", function(d) {
+            return (year < d.opened) ? 0 : scaling * Math.sqrt(d.beds) / Math.sqrt(maxBeds);
+        });
+}
+
+</script>
+</body>
+</html>

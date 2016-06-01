@@ -1,0 +1,199 @@
+html, body{
+  margin: 0;
+  font: 14px/16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#date, #play, #slider-container {
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: 20px;
+}
+
+#date {
+  border-left: 5px solid #ccc;
+  padding: 3px 0 3px 10px;
+  margin-left: 60px;
+  color: #333;
+  font: 14px/16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+#date p { margin: 0; }
+#date p:first-child {
+  color: #999;
+  font-size: 11px;
+  line-height: 13px;
+}
+#date p#year {
+  font-size: 30px;
+  line-height: 30px;
+}
+#date p#year span {
+  float: left;
+  width: 2.55em;
+}
+
+.d3-slider-handle {
+    position: absolute;
+    margin-top: 2.5px;
+    width: 15px;
+    height: 20px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background: linear-gradient(to bottom, #eee 0%, #ddd 100%);
+    z-index: 3;
+    cursor: pointer;
+}
+
+.d3-slider-handle:hover { border: 1px solid #666; }
+
+#date {
+  border-left: 5px solid #ccc;
+  padding: 3px 0 3px 10px;
+  margin-left: 60px;
+  color: #333;
+}
+#date p { margin: 0; }
+#date p:first-child {
+  color: #999;
+  font-size: 11px;
+  line-height: 13px;
+}
+#date p#year {
+  font-size: 30px;
+  line-height: 30px;
+}
+#date p#year span {
+  float: left;
+  width: 2.55em;
+}
+
+#play {
+  width: 53px;
+  height: 53px;
+  background-image: url(../../images/play.png);
+  border-radius: 5px;
+  margin-left: 20px;
+  cursor: pointer;
+}
+
+#play:hover {
+  background-position: 0 -53px;
+}
+
+#play.pause {
+  background-image: url(../../images/pause.png);
+}
+
+#slider-container {
+  position: relative;
+  width: 300px;
+  margin-left: 15px;
+}
+
+#slider-div {
+  margin-left: 65px;
+  margin-top: 10px;
+}
+
+
+.subunit {
+  fill: #ddd;
+  stroke: none;
+}
+
+#BGD {
+  stroke: white;
+  stroke-width: 2px;
+}
+
+.subunit-boundary {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 2,2;
+  stroke-linejoin: round;
+}
+
+
+.subunit-label {
+  fill: #777;
+  fill-opacity: .5;
+  font-size: 20px;
+  font-weight: 300;
+  text-anchor: middle;
+}
+
+.place,
+.place-label { fill: #444; }
+
+text {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.hospital {
+    fill-opacity: 0.5;
+    stroke-width: 1px;
+    stroke: black;
+}
+
+.hospital:hover {
+	stroke-width: 1.5px;
+	fill-opacity: 0.7;
+}
+
+.axis {
+  font: 10px sans-serif;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.axis .domain {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .3;
+  stroke-width: 10px;
+  stroke-linecap: round;
+}
+
+.axis .halo {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 8px;
+  stroke-linecap: round;
+}
+
+.slider .handle path {
+  stroke: black;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.slider .handle text {
+  fill: black;
+  text-align: center;
+  font-size: 18px;
+}
+
+#probe {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  display: none;
+  font-size: 12px;
+  text-align: center;
+  -webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.25);
+  -moz-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.25);
+  box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.25);
+}
+
+#probe strong {
+  font-size: 16px;
+}
+
+#probe span {
+  color: #999;
+}
