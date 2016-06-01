@@ -68,7 +68,7 @@ var probes = {'y1955': d3.select("#map-1955").append("div").attr("class", "probe
 // color scale
 var z = d3.scale.category20().domain(SICs);
 
-d3.json("topology/us.json", function(error, us) {
+d3.json("../../topology/us.json", function(error, us) {
     if (error) throw error;
 
 	var temp = ['y1955','y2015'];
@@ -210,15 +210,3 @@ function drawMap(y) {
         .remove();
 
 }
-/*
-function toTitleCase(string)
-{
-    // \u00C0-\u00ff for a happy Latin-1
-    return string.toLowerCase().replace(/_/g, ' ').replace(/\b([a-z\u00C0-\u00ff])/g, function (_, initial) {
-        return initial.toUpperCase();
-    }).replace(/(\s(?:de|a|o|e|da|do|em|ou|[\u00C0-\u00ff]))\b/ig, function (_, match) {
-        return match.toLowerCase();
-    });
-}
-*/
-function cl(x) { console.log(x) } ;
