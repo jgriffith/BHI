@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>Largest US Firms</title>
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- DC.css -->
+    <link href="css/dc.min.css" rel="stylesheet"></link>
+
+    <!-- Custom styling -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+	<div class="page-header">
+	    <h1>Largest US<sup><small>*</small></sup> Firms</h1>
+	    <p>Each bubble represents one of the roughly 500 largest US<sup>*</sup> companies. A bubble's location corresponds to the approximate location of its corresponding company's headquarters. Clicking columns in the bar charts will subset data accordingly.</p>
+	    <p style="font-size:10px"><br><sup>*</sup> Domtar is headquartered in Montreal, Canada.</p>
+    </div>
+	
+	<div class="row container" style="margin-top:20px">
+        <div class="col-md-4" id="sic-chart-1955">
+        	<h2>1955</h2>
+            <h6><b>Firms by Industry</b> <a class="reset" href="javascript:sicCharts.y1955.filterAll();dc.redrawAll('1955');" style="display: none;">reset</a></h6>
+        </div>
+        <div class="col-md-8">
+            <div id="map-1955" style="width: 100%; height: 550px; display: inline-block"></div>
+        </div>
+	</div>
+<hr>	
+	<div class="row container" style="margin-top:20px">
+        <div class="col-md-4" id="sic-chart-2015">
+        	<h2>2015</h2>
+            <h6><b>Firms by Industry</b> <a class="reset" href="javascript:sicCharts.y2015.filterAll();dc.redrawAll('2015');" style="display: none;">reset</a></h6>
+        </div>
+        <div class="col-md-8">
+            <div id="map-2015" style="width: 100%; height: 550px; display: inline-block"></div>
+        </div>
+	</div>
+
+    <script src="lib/d3.v3.min.js"></script>
+    <script src="lib/topojson.v1.min.js"></script>
+    <script src="lib/crossfilter.min.js"></script>
+    <script src="lib/jquery.min.js"></script>
+    <script src="lib/dc.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
