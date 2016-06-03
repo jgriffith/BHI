@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="main.css" />
+    <title>CEM by Country</title>
+</head>
+
+<body>
+    <div id="container">
+        <h1>CEM by Country</h1>
+        <h2>BLah</h2>
+        <p id="intro">Blah</p>
+        <div id="map-container"></div>
+        <p id="source"><b>Sources &amp; Data:</b><br>
+        </p>
+    </div>
+    
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://d3js.org/d3.geo.projection.v0.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+
+    <script>
+        var width = 960,
+            height = 450;
+
+        var projection = d3.geo.kavrayskiy7()
+            .scale(125)
+            .translate([width / 2, height / 2])
+            .precision(.1);
+
+        var graticule = d3.geo.graticule();
+
+        var path = d3.geo.path()
+            .projection(projection);
+
+        var svg = d3.select("#map-container").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var g = svg.append("g");
+
+        g.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "white")
+            .attr("opacity", 0)
+            .on("mouseover", function() {
+                hoverData = null;
+                if (probe) probe.style("display", "none");
+            });
+
+		var ocean = g.append("g")
+			.attr("id", "ocean");
+
+        var map = g.append("g")
+            .attr("id", "map");
+
+        var records = {};
+
+        var probe, hoverData;
+
+        var colorScale = d3.scale.linear()
+        	.domain([0,12,25,100,300,750])
+        	.range(['#feebe2','#fbb4b9','#f768a1','#c51b8a','#7a0177','#000'])
+
+        probe = d3.select("#map-container").append("div") // hover popup
+            .attr("id", "probe");
+		
+		d3.json("downloads.topojson", function(error, world) {
+		    if (error) throw error;
+		
+		    var countries = topojson.feature(world, world.objects.countries).features,
+		        n = countries.length;
+		
+			// ocean & globe border
+		    ocean.append("path")
+				.datum(graticule.outline)
+				.attr("class", "ocean")
+				.attr("d", path);
+
+            map.selectAll("path")
+                .data(countries)
+              .enter().append("path")
+                .attr("vector-effect", "non-scaling-stroke")
+                .attr("class", "country")
+            .attr("fill", function(d) { return (d.properties.downloads > 0) ? colorScale(d.properties.downloads) : "#fff"; })
+                .attr("stroke", "#555")
+                .attr("id", function(d) { return "c" + d.id; })
+                .attr("d", path);
+
+            map.selectAll(".country")
+                .on("mousemove", function(d) {
+                	var measure = d.properties.downloads;
+                    if (measure > 0) {
+                        probe.style({
+                            "display": "block",
+                            "top":  (d3.event.pageY - 40) + "px",
+                            "left": (d3.event.pageX + 10) + "px"
+                        })
+                        .html("<strong>" + d.properties.country + "<br>" + measure + 
+                        		" download" + (measure > 1 ? 's' : '') + "</strong><br/>");
+                    }
+                })
+                .on("mouseout", function() { probe.style("display", "none"); });
+
+            window.onresize = resize;
+            resize();
+        });
+
+        function resize() {
+            var w = d3.select("#container").node().offsetWidth,
+                h = window.innerHeight - 80;
+            var scale = Math.max(1, Math.min(w / width, h / height));
+            svg
+                .attr("width", width * scale)
+                .attr("height", height * scale);
+            g.attr("transform", "scale(" + scale + "," + scale + ")");
+
+            d3.select("#map-container").style("width", width * scale + "px");
+        }
+    </script>
+</body>
+
+</html>
