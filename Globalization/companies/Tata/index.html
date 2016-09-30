@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../../css/d3.slider.css" />
+    <link rel="stylesheet" href="../../css/main.css" />
+    <title>Tata Corporation</title>
+    
+    <style>
+    .land { fill: #fff; }
+	
+	.boundary {
+	  fill: none;
+	  stroke: #aaa;
+	  stroke-width: .5px;
+	}
+	
+	circle {
+		stroke: black;
+		stroke-width: 0.5px;
+	}
+	
+	#map circle:hover {
+		stroke-width: 1.5px;
+	}
+	
+	.legend { font-size: 12px; }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <h1>Tata Corporation</h1>
+        <h2>1903 – 2015</h2>
+        <p id="intro">This graphic shows the spread of the Tata Corporation's presence over the twentieth century. Each circle represents an subsidiary's presence within a country and is colored by subsidiary. <b>Note:</b> because exact office locations are not known, all markers are placed near country capitals. The animation skips over long static periods to save time. Hovering over a marker shows the country, subsidiary and the office's opening date.</p>
+        <div id="date">
+            <p>Current Year:</p>
+            <p id="year"></p>
+        </div>
+        <div id="play"></div>
+        <div id="slider-container">
+            <div id="slider-div"></div>
+        </div>
+        <div id="map-container"></div>
+        <p id="source"><b>Sources &amp; Data:</b><br>
+        	<a href="http://www.tcs.com/worldwide/Pages/default.aspx" target="_blank">Tata Consultancy Services</a><br>
+			<a href="http://www.tajhotels.com/About-Taj/Company-Information/History-Of-Taj.html" target="_blank">Taj Group</a><br>
+			<a href="http://tatainternational.com/global-footprint/" target="_blank">Tata International</a><br> 
+			<a href="http://www.tatamotors.com/about-us/milestone.php" target="_blank">Tata Motors</a><br>
+			<a href="http://www.tatasteel.com/global-network/international-operations.asp" target="_blank">Tata Steel</a><br>
+			<a href="http://www.tataglobalbeverages.com/about-us/our-history" target="_blank">Tata Global Beverages</a><br> 
+		Tarun Khanna and Krishna Palepu, "House of Tata: Acquiring a Global Footprint," HBS Case, 2009
+		Tata Archives
+        </p>
+    </div>
+    <script src="../../../lib/d3.v3.min.js"></script>
+    <script src="../../../lib/topojson.v1.min.js"></script>
+    <script src="../../../lib/d3.geo.projection.min.js"></script>
+    <script src="../../../lib/d3.slider.js"></script>
+    <script src="../../../lib/d3.queue.min.js"></script>
+    <script>
+        var width = 1000,
+            height = 550;
+
+        var projection = d3.geo.kavrayskiy7() // define our projection with parameters
+            .scale(150)
+            .translate([width / 2, height / 2])
+            .precision(.1);
+
+        var graticule = d3.geo.graticule();
+
+        var path = d3.geo.path()
+            .projection(projection);
+
+        var svg = d3.select("#map-container").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var g = svg.append("g");
+
+        g.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "white")
+            .attr("opacity", 0)
+            .on("mouseover", function() {
+                hoverData = null;
+                if (probe) probe.style("display", "none");
+            });
+
+		var ocean = g.append("g")
+			.attr("id", "ocean");
+        
+        var map = g.append("g")
+            .attr("id", "map");
+
+        var dotsize = 3.5;
+
+        var probe, hoverData;
+
+		var tata; // to keep global
+
+        var timeScale, sliderScale, slider, sliderMargin = 65;
+
+        var firstYear = 1903,
+            currentYear = firstYear,
+            lastYear = 2015,
+            interval,
+            frameLength = 800,
+            isPlaying = false;
+
+		var subsidHash = {"Beverages": "Tata Global Beverages", "Consulting": "Tata Consultancy Services", 
+						  "Hotels": "Taj Group", "International": "Tata International", 
+						  "Motors": "Tata Motors", "Steel": "Tata Steel"}
+
+		var color = d3.scale.ordinal()
+			.domain(["Beverages", "Consulting", "Hotels", "International", "Motors", "Steel"])
+			.range(["#404040", "#61b93e", "#4290f5", "#fcda40", "#fd3ed7", "#f53e3d"]);
+
+        probe = d3.select("#map-container").append("div") // hover popup
+            .attr("id", "probe");
+
+        d3.select("body")
+            .append("div")
+            .attr("id", "loader")
+            .style("top", d3.select("#play").node().offsetTop + "px")
+            .style("height", d3.select("#date").node().offsetHeight + d3.select("#map-container").node().offsetHeight + "px")
+
+		d3.json("../../../topology/world-110m.json", function(error, world) {
+			if (error) throw error;
+			
+			// ocean & globe border
+		    ocean.append("path")
+				.datum(graticule.outline)
+				.attr("class", "ocean")
+				.attr("d", path);
+
+			map.insert("path", ".graticule")
+				.datum(topojson.feature(world, world.objects.land))
+				.attr("class", "land")
+				.attr("d", path);
+			
+			map.insert("path")
+				.datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
+				.attr("class", "boundary")
+				.attr("d", path);
+			
+			d3.json("tata.json", function(error, data) {
+				if (error) throw error;
+				
+				// remove bad data & globalize
+				tata = data.filter(function(d) {
+					if (!("latlng" in d)) { 
+						console.log("No latlng"); 
+						console.log(d); 
+						return false; 
+					}
+					if (!d.entrance || !d.exit) return false;
+					else return true;
+				});
+			
+				d3.select("#loader").remove();
+				
+				addLegend();
+			
+				timeScale = d3.scale.linear()
+					.domain([firstYear, lastYear])
+					.range([0, 800]);
+	
+	            slider = d3.slider().axis(true).min(firstYear).max(lastYear)
+	                .on("slide", function(event, value) {
+	                    if (isPlaying) clearInterval(interval);
+	                    currentYear = value;
+	                    drawYear(currentYear, d3.event.type != "drag");
+	                })
+	                .on("slideend", function() { if (isPlaying) animate(); })
+	                .value(firstYear);
+	
+	            d3.select("#slider-container")
+	                .append("div")
+	                .attr("id", "slider-div")
+	                .style("width", timeScale.range()[1] + "px")
+	                .on("mouseout", function() { d3.select("#slider-probe").style("display", "none"); })
+	                .call(slider);
+	
+	            d3.select("#slider-div a").on("mousemove", function() {
+	                d3.event.stopPropagation();
+	            })
+	
+				d3.select("#play")
+					.attr("title", "Play animation")
+					.on("click", function() {
+						if (!isPlaying) {
+							isPlaying = true;
+							d3.select(this).classed("pause", true).attr("title", "Pause animation");
+							animate();
+						} else {
+							isPlaying = false;
+							d3.select(this).classed("pause", false).attr("title", "Play animation");
+							clearInterval(interval);
+						}
+					});
+				
+				drawYear(firstYear); // initial map
+				
+				window.onresize = resize;
+				resize();	
+			});
+		});
+
+        function drawYear(y) {
+        	slider.value(y);
+        	d3.select("#date p#year").html(y);
+        	
+        	// JOIN
+        	// Join new data with old offices, if any.
+			var offices = map.selectAll("circle")
+				.data(tata.filter(function(d) { 
+					return d.entrance <= y && y <= d.exit; 
+				}), function(d) { return d.id; });
+    
+			// ENTER
+			// Create new offices as needed.
+			offices.enter().append("circle")
+				.attr("r", 0)
+				.attr("transform", function(d) { return "translate(" + starify(d) + ")"; })
+				.attr("class", function(d) { return d.industry; })
+				.attr("id", function(d) { return d.id; })
+				.attr("fill", function(d) { return color(d.industry); })
+			  .transition() // transition only applies to attributes after this 
+			  	.ease("linear")
+                .duration(frameLength*.4)
+			    .attr("r", dotsize);
+			    
+			offices
+                .on("mousemove", function(d) {
+                    probe.style({
+                        "display": "block",
+                        "top":  (d3.event.pageY - 40) + "px",
+                        "left": (d3.event.pageX + 10) + "px"
+                    })
+                    .html("<strong>" + d.country + "<br>" + subsidHash[d.industry] + "<br>" + d.entrance + "</strong><br/>");
+                })
+                .on("mouseout", function() { probe.style("display", "none"); });
+                
+            // EXIT
+            // Remove old offices as needed
+            offices.exit().transition()
+            	.ease("linear")
+                .duration(frameLength*.4)
+				.attr("r", 0)
+				.remove();
+        }
+
+        function animate() {
+            interval = setInterval(function() {
+                currentYear++;
+                // skip ahead during boring parts
+                switch (currentYear) {
+	                case lastYear+1: currentYear = firstYear; break;
+					case 1908: currentYear = 1944; break;
+					case 1946: currentYear = 1960;
+                }
+                
+                // move the slider handle
+                d3.select("#slider-div .d3-slider-handle")
+					.style("left", 100*(currentYear-firstYear)/(lastYear-firstYear+1) + "%" );
+					
+                slider.value(currentYear);
+                drawYear(currentYear);
+
+                if (currentYear == lastYear) {
+                    isPlaying = false;
+                    d3.select("#play").classed("pause", false).attr("title", "Play animation");
+                    clearInterval(interval);
+                    return;
+                }
+            }, frameLength);
+        }
+
+        function resize() {
+            var w = d3.select("#container").node().offsetWidth,
+                h = window.innerHeight - 80;
+            var scale = Math.max(1, Math.min(w / width, h / height));
+            svg.attr("width", width * scale)
+                .attr("height", height * scale);
+            g.attr("transform", "scale(" + scale + "," + scale + ")");
+            d3.select("#map-container").style("width", width * scale + "px");
+            timeScale.range([0, 500 + w - width]);
+        }
+        
+        function starify(d) {
+	        // adjust locations to prevent too much overlap
+	        var L = projection(d.latlng),
+	        	π = Math.PI,
+	        	r = dotsize * 1.5;
+	        
+			switch (d.industry) {
+		        case "Beverages": 
+		        	return L;
+		        case "Consulting": 
+		        	var θ = -π / 2 + (2*π / 5);
+		        	break;
+		        case "Hotels": 
+		        	var θ = -π / 2; 
+		        	break;
+		        case "International": 
+		        	var θ = -π / 2 + 2*(2*π / 5); 
+		        	break;
+		        case "Motors": 
+		        	var θ = -π / 2 - 2*(2*π / 5); 
+		        	break;
+		        case "Steel": 
+		        	var θ = -π / 2 - (2*π / 5); 
+		        	break;
+	        }
+
+	        return [L[0] + r*Math.cos(θ), L[1] + r*Math.sin(θ)];
+        }
+        
+        function addLegend() {
+          	var legendSpacing = 20,
+          		legendCircSize = 1.5*dotsize;
+          		
+          	var legendColor = d3.scale.ordinal()
+    				.domain(["Tata Global Beverages", "Tata Consultancy Services", "Taj Group", "Tata International", "Tata Motors", "Tata Steel"])
+    				.range(color.range())
+            
+	        var legend = svg.selectAll('.legend')
+				.data(legendColor.domain())
+			  .enter().append('g')
+				.attr('class', 'legend')
+				.attr('transform', function(d, i) {
+					var height = legendCircSize + legendSpacing;
+					var horz = 2 * legendCircSize + 20;
+					var vert = i * height + 55;
+					return 'translate(' + horz + ',' + vert + ')';
+				});
+				
+			legend.append('circle')
+				.attr('r', legendCircSize)
+				.style('fill', legendColor);
+			
+			legend.append('text')
+				.attr('x', legendCircSize + 10)
+				.attr('y', dotsize+1)
+				.text(function(d) { return d; });
+        }
+        
+        function cl(x) {
+	        console.log(x);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../../css/d3.slider.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <title>IBM: Countries of Operation</title>
+</head>
+<body>
+  <div id="container">
+    <h1>IBM: Countries of Operation</h1>
+    <h2>1915 – 2010</h2>
+    <p id="intro">This visualization shows the spread of IBM's global operations over the 20th century. To highlight expansions, newly entered countries appear in <font style="color:#f00; font-weight:bold;">red</font> and countries with continuing operations appear in <font style="color:#1f78b4; font-weight:bold;">blue</font>.</p>
+    <div id="date">
+      <p>Current Year:</p>
+      <p id="year"></p>
+    </div>
+    <div id="play"></div>
+    <div id="slider-container">
+      <div id="slider-div"></div>
+    </div>
+    <div id="map-container"></div>
+    <p id="source"><b>Sources &amp; Data:</b><br>
+	    J. Connolly, <i>History of Computing in Europe</i><br>
+		IBM Annual Reports, various years<br>
+		<i>Directory of American Firms Operating in Foreign Countries</i>, various editions<br>
+		OneSource
+    </p>
+  </div>
+  <script src="../../../lib/d3.v3.min.js"></script>
+  <script src="../../../lib/topojson.v1.min.js"></script>
+  <script src="../../../lib/d3.geo.projection.min.js"></script>
+  <script src="../../../lib/d3.slider.js"></script>
+  <script src="../../../lib/d3.queue.min.js"></script>
+  <script src="../../js/main.js"></script>
+  <script>
+  window.onload = function () {
+	  d3.csv("ibm.csv", function(d) {
+        var rec = {};
+        for (var key in d) {
+            if (key != "year" && d.hasOwnProperty(key)) {
+                rec[key] = +d[key];
+            }
+        }
+        var obj = {},
+            year = d.year;
+        obj[year] = rec; 	// obj[d.year] = rec doesn't work
+        return obj;
+
+    }, function (data) {
+        data.forEach(function(d) {
+            years.push(d3.keys(d)[0]);
+        });
+
+        years.sort();
+        for (var i in data) {
+            var year = d3.keys(data[i])[0];
+            records[year] = data[i][year];
+        }
+
+        timeScale = d3.scale.linear()
+           .domain([years[0], years[years.length-1]])
+           .range([0, 500]);
+
+        createSlider();
+
+        d3.select("#play")
+         .attr("title","Play animation")
+         .on("click", function(){
+           if (!isPlaying){
+             isPlaying = true;
+             d3.select(this).classed("pause",true).attr("title","Pause animation");
+             animate();
+           } else {
+             isPlaying = false;
+             d3.select(this).classed("pause",false).attr("title","Play animation");
+             clearInterval(interval);
+           }
+         });
+
+        drawYear(years[0]); // initial map
+
+        window.onresize = resize;
+        resize();
+    });
+  }
+  </script>
+</body>
+</html>

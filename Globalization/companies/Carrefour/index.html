@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../../css/d3.slider.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <title>Carrefour Corporation: Countries of Operation</title>
+</head>
+<body>
+  <div id="container">
+    <h1>Carrefour Corporation: Countries of Operation</h1>
+    <h2>1960 – 2012</h2>
+<!--     <p id="intro">This visualization shows the spread of the Arçelik Corporation's global operations over the 20th century. To highlight expansions, newly entered countries appear in <font style="color:#f00; font-weight:bold;">red</font> and countries with continuing operations appear in <font style="color:#1f78b4; font-weight:bold;">blue</font>.</p> -->
+    <div id="date">
+      <p>Current Year:</p>
+      <p id="year"></p>
+    </div>
+    <div id="play"></div>
+    <div id="slider-container">
+      <div id="slider-div"></div>
+    </div>
+    <div id="map-container"></div>
+    <p id="source"><b>Sources &amp; Data:</b><br>
+	    <a href="http://carrefourksa.com/index.php?option=com_content&view=article&id=1&Itemid=4&lang=en" target="_blank">Carrefour Kingdom of Saudi Arabia</a> <br>
+		<a href="http://news.bbc.co.uk/2/hi/business/4335587.stm" target="_blank">"Carrefour Exits Japan and Mexico"</a>, BBC News, 10 March 2005 <br>
+		<a href="http://www.bbc.co.uk/news/business-18455269" target="_blank">"Retailer Carrefour to Sell Stake in Greek Joint Venture"</a>, BBC News, 15 June 2012 <br>
+		<a href="http://www.carrefour.com.eg/aboutus.aspx" target="_blank">About Carrefour</a> <br>
+		<a href="http://www.carrefour.ro/despre-grup-carrefour.html" target="_blank">Carrefour Romania</a> <br>
+		<a href="http://www.thejakartaglobe.com/archive/french-supermarket-carrefour-to-exit-singapore/540981/" target="_blank">"French Supermarket Carrefour to Exit Singapore"</a>, Straits Times</p>
+  </div>
+  <script src="../../../lib/d3.v3.min.js"></script>
+  <script src="../../../lib/topojson.v1.min.js"></script>
+  <script src="../../../lib/d3.geo.projection.min.js"></script>
+  <script src="../../../lib/d3.slider.js"></script>
+  <script src="../../../lib/d3.queue.min.js"></script>
+  <script src="../../js/main.js"></script>
+  <script>
+  window.onload = function () {
+	  d3.csv("carrefour.csv", function(d) {
+        var rec = {};
+        for (var key in d) {
+            if (key != "year" && d.hasOwnProperty(key)) {
+                rec[key] = +d[key];
+            }
+        }
+        var obj = {},
+            year = d.year;
+        obj[year] = rec; 	// obj[d.year] = rec doesn't work
+        return obj;
+
+    }, function (data) {
+        data.forEach(function(d) {
+            years.push(d3.keys(d)[0]);
+        });
+        years.sort();
+
+        for (var i in data) {
+            var year = d3.keys(data[i])[0];
+            records[year] = data[i][year];
+        }
+
+        timeScale = d3.scale.linear()
+           .domain([years[0], years[years.length-1]])
+           .range([0, 500]);
+
+        createSlider();
+
+        d3.select("#play")
+         .attr("title","Play animation")
+         .on("click", function(){
+           if (!isPlaying){
+             isPlaying = true;
+             d3.select(this).classed("pause",true).attr("title","Pause animation");
+             animate();
+           } else {
+             isPlaying = false;
+             d3.select(this).classed("pause",false).attr("title","Play animation");
+             clearInterval(interval);
+           }
+         });
+
+        drawYear(years[0]); // initial map
+
+        window.onresize = resize;
+        resize();
+    });
+  }
+  </script>
+</body>
+</html>
